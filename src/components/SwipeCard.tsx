@@ -1,5 +1,6 @@
-import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, type PanInfo, animate } from "framer-motion";
 import { Clock } from "lucide-react";
+import { useState } from "react";
 import type { NewsItem } from "@/data/news";
 
 interface Props {
@@ -8,20 +9,43 @@ interface Props {
   index: number;
   onSwipe: (dir: "left" | "right") => void;
   onTap: () => void;
+  triggerSwipe?: "left" | "right" | null;
 }
 
-export function SwipeCard({ item, isTop, index, onSwipe, onTap }: Props) {
+export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: Props) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-18, 0, 18]);
+  const y = useMotionValue(0);
+  const rotate = useTransform(x, [-300, 0, 300], [-22, 0, 22]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
   const nopeOpacity = useTransform(x, [-140, -20], [1, 0]);
+  const [exiting, setExiting] = useState(false);
+
+  const flyOff = (dir: "left" | "right") => {
+    if (exiting) return;
+    setExiting(true);
+    const targetX = dir === "right" ? 600 : -600;
+    animate(x, targetX, {
+      type: "tween",
+      duration: 0.35,
+      ease: [0.32, 0, 0.67, 0],
+      onComplete: () => onSwipe(dir),
+    });
+  };
+
+  // Allow parent buttons to trigger swipe animation
+  if (isTop && triggerSwipe && !exiting) {
+    flyOff(triggerSwipe);
+  }
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const threshold = 110;
     if (info.offset.x > threshold || info.velocity.x > 600) {
-      onSwipe("right");
+      flyOff("right");
     } else if (info.offset.x < -threshold || info.velocity.x < -600) {
-      onSwipe("left");
+      flyOff("left");
+    } else {
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
+      animate(y, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
   };
 
@@ -30,12 +54,13 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap }: Props) {
       className="absolute inset-0 select-none"
       style={{
         x: isTop ? x : 0,
+        y: isTop ? y : 0,
         rotate: isTop ? rotate : 0,
         zIndex: 10 - index,
       }}
-      drag={isTop ? "x" : false}
+      drag={isTop && !exiting ? true : false}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.9}
+      dragElastic={0.6}
       onDragEnd={handleDragEnd}
       initial={false}
       animate={{
@@ -44,10 +69,13 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap }: Props) {
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       whileTap={{ cursor: "grabbing" }}
-      onClick={() => isTop && Math.abs(x.get()) < 5 && onTap()}
+      onClick={() => {
+        if (isTop && !exiting && Math.abs(x.get()) < 5 && Math.abs(y.get()) < 5) {
+          onTap();
+        }
+      }}
     >
       <div className="relative h-full w-full overflow-hidden rounded-3xl bg-card shadow-[0_20px_60px_-15px_rgba(0,0,0,0.35)]">
-        {/* Image */}
         <div className="relative h-[58%] w-full overflow-hidden">
           <img
             src={item.image}
@@ -57,20 +85,17 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap }: Props) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-          {/* Category badge */}
           <div className="absolute left-4 top-4">
             <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg">
               {item.category}
             </span>
           </div>
 
-          {/* Time */}
           <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-black/40 px-3 py-1 text-xs text-white backdrop-blur-sm">
             <Clock className="h-3 w-3" />
             {item.readTime}
           </div>
 
-          {/* LIKE / NOPE stamps */}
           {isTop && (
             <>
               <motion.div
@@ -89,7 +114,6 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap }: Props) {
           )}
         </div>
 
-        {/* Text */}
         <div className="flex h-[42%] flex-col gap-3 p-5">
           <h2 className="font-display text-2xl font-bold leading-tight text-foreground">
             {item.title}
