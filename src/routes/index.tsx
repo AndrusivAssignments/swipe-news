@@ -1,7 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, X, User, Search, Bookmark } from "lucide-react";
+import {
+  Heart,
+  X,
+  User,
+  Search,
+  Bookmark,
+  Home,
+  Sparkles,
+  Compass,
+  Settings,
+  Clock,
+  Flame,
+  MapPin,
+  Check,
+  ChevronRight,
+  SlidersHorizontal,
+  Share2,
+  BookOpen,
+} from "lucide-react";
 import { NEWS, type NewsItem, type Category } from "@/data/news";
 import { SwipeCard } from "@/components/SwipeCard";
 import { ArticleSheet } from "@/components/ArticleSheet";
@@ -10,16 +28,18 @@ import { SavedSheet } from "@/components/SavedSheet";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Stimme Swipe — News, die zu dir passt" },
+      { title: "Stimme Swipe - News, die zu dir passt" },
       {
         name: "description",
         content:
-          "Swipe-basierter News-Reader der Heilbronner Stimme. In 60 Wörtern informiert — entscheide selbst, was dich interessiert.",
+          "Swipe-basierter News-Reader der Heilbronner Stimme. In 60 Wörtern informiert und auf junge Leser zugeschnitten.",
       },
     ],
   }),
   component: Index,
 });
+
+type Tab = "swipe" | "today" | "explore" | "saved" | "profile";
 
 const CATEGORIES: { label: string; value: Category | "Für dich" }[] = [
   { label: "Für dich", value: "Für dich" },
@@ -31,24 +51,79 @@ const CATEGORIES: { label: string; value: Category | "Für dich" }[] = [
   { label: "Panorama", value: "Panorama" },
 ];
 
+const INTERESTS = [
+  "Events",
+  "Campus",
+  "Sport",
+  "Mobilität",
+  "Jobs",
+  "Kultur",
+  "Politik kurz erklärt",
+  "Wochenendtipps",
+];
+
+const TOPICS: Record<Category, string[]> = {
+  Lokal: ["Innenstadt", "Verkehr", "Stadtleben"],
+  Sport: ["Falken", "Marathon", "Vereine"],
+  Politik: ["Gemeinderat", "Schule", "Klima"],
+  Kultur: ["Konzerte", "Museen", "Festivals"],
+  Wirtschaft: ["Ausbildung", "Audi", "Startups"],
+  Panorama: ["Menschen", "Social Media", "Alltag"],
+};
+
 function Index() {
+  const [activeTab, setActiveTab] = useState<Tab>("swipe");
   const [activeCat, setActiveCat] = useState<Category | "Für dich">("Für dich");
   const [index, setIndex] = useState(0);
   const [liked, setLiked] = useState<NewsItem[]>([]);
+  const [skipped, setSkipped] = useState<NewsItem[]>([]);
   const [openArticle, setOpenArticle] = useState<NewsItem | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
   const [feedback, setFeedback] = useState<"left" | "right" | null>(null);
   const [trigger, setTrigger] = useState<"left" | "right" | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([
+    "Events",
+    "Campus",
+    "Wochenendtipps",
+  ]);
 
   const deck = useMemo(
-    () =>
-      activeCat === "Für dich"
-        ? NEWS
-        : NEWS.filter((n) => n.category === activeCat),
-    [activeCat]
+    () => (activeCat === "Für dich" ? NEWS : NEWS.filter((n) => n.category === activeCat)),
+    [activeCat],
   );
 
-  // Reset deck position when category changes
+  const categorySignals = useMemo(() => {
+    const counts = new Map<Category, { likes: number; skips: number }>();
+    NEWS.forEach((item) => counts.set(item.category, { likes: 0, skips: 0 }));
+    liked.forEach((item) => {
+      const current = counts.get(item.category);
+      if (current) current.likes += 1;
+    });
+    skipped.forEach((item) => {
+      const current = counts.get(item.category);
+      if (current) current.skips += 1;
+    });
+    return counts;
+  }, [liked, skipped]);
+
+  const favoriteCategory = useMemo(() => {
+    const ranked = [...categorySignals.entries()].sort(
+      (a, b) => b[1].likes - b[1].skips - (a[1].likes - a[1].skips),
+    );
+    return ranked[0]?.[1].likes ? ranked[0][0] : "Lokal";
+  }, [categorySignals]);
+
+  const todayFeed = useMemo(() => {
+    return [...NEWS].sort((a, b) => {
+      const aSignal = categorySignals.get(a.category);
+      const bSignal = categorySignals.get(b.category);
+      const aScore = (aSignal?.likes ?? 0) - (aSignal?.skips ?? 0);
+      const bScore = (bSignal?.likes ?? 0) - (bSignal?.skips ?? 0);
+      return bScore - aScore;
+    });
+  }, [categorySignals]);
+
   useEffect(() => {
     setIndex(0);
     setTrigger(null);
@@ -57,21 +132,147 @@ function Index() {
   const visible = deck.slice(index, index + 3).reverse();
 
   const completeSwipe = (dir: "left" | "right") => {
+    const item = deck[index];
+    if (!item) return;
+
     setFeedback(dir);
     setTimeout(() => setFeedback(null), 300);
+
     if (dir === "right") {
-      const item = deck[index];
-      setLiked((l) => (l.find((x) => x.id === item.id) ? l : [item, ...l]));
+      setLiked((items) =>
+        items.find((existing) => existing.id === item.id) ? items : [item, ...items],
+      );
+    } else {
+      setSkipped((items) =>
+        items.find((existing) => existing.id === item.id) ? items : [item, ...items],
+      );
     }
-    setIndex((i) => i + 1);
+
+    setIndex((current) => current + 1);
     setTrigger(null);
   };
 
   const reset = () => setIndex(0);
 
   return (
-    <div className="relative mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden bg-background">
-      <header className="z-20 flex shrink-0 items-center justify-between px-5 pb-3 pt-5">
+    <div className="min-h-[100dvh] bg-secondary px-0 text-foreground sm:grid sm:place-items-center sm:p-6">
+      <div className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-background shadow-[0_24px_80px_-40px_rgba(0,0,0,0.45)] sm:h-[860px] sm:max-h-[calc(100dvh-48px)] sm:rounded-[2rem]">
+        <AppHeader
+          activeTab={activeTab}
+          favoriteCategory={favoriteCategory}
+          likedCount={liked.length}
+          onSavedOpen={() => setSavedOpen(true)}
+        />
+
+        <main className="min-h-0 flex-1 overflow-hidden">
+          <AnimatePresence mode="wait">
+            {activeTab === "swipe" && (
+              <SwipeView
+                key="swipe"
+                activeCat={activeCat}
+                deck={deck}
+                feedback={feedback}
+                index={index}
+                likedCount={liked.length}
+                setActiveCat={setActiveCat}
+                setOpenArticle={setOpenArticle}
+                setTrigger={setTrigger}
+                trigger={trigger}
+                visible={visible}
+                onReset={reset}
+                onSwipe={completeSwipe}
+              />
+            )}
+            {activeTab === "today" && (
+              <TodayView
+                key="today"
+                feed={todayFeed}
+                favoriteCategory={favoriteCategory}
+                liked={liked}
+                onOpenArticle={setOpenArticle}
+              />
+            )}
+            {activeTab === "explore" && (
+              <ExploreView
+                key="explore"
+                favoriteCategory={favoriteCategory}
+                onCategorySelect={(category) => {
+                  setActiveCat(category);
+                  setActiveTab("swipe");
+                }}
+              />
+            )}
+            {activeTab === "saved" && (
+              <SavedView
+                key="saved"
+                items={liked}
+                onOpenArticle={setOpenArticle}
+                onRemove={(id) => setLiked((items) => items.filter((item) => item.id !== id))}
+              />
+            )}
+            {activeTab === "profile" && (
+              <ProfileView
+                key="profile"
+                favoriteCategory={favoriteCategory}
+                liked={liked}
+                skipped={skipped}
+                selectedInterests={selectedInterests}
+                setSelectedInterests={setSelectedInterests}
+              />
+            )}
+          </AnimatePresence>
+        </main>
+
+        <BottomNav activeTab={activeTab} onChange={setActiveTab} savedCount={liked.length} />
+
+        <Onboarding
+          open={showOnboarding}
+          selectedInterests={selectedInterests}
+          setSelectedInterests={setSelectedInterests}
+          onClose={() => setShowOnboarding(false)}
+        />
+
+        <ArticleSheet item={openArticle} onClose={() => setOpenArticle(null)} />
+        <SavedSheet
+          open={savedOpen}
+          items={liked}
+          onClose={() => setSavedOpen(false)}
+          onOpenArticle={(item) => {
+            setSavedOpen(false);
+            setTimeout(() => setOpenArticle(item), 200);
+          }}
+          onRemove={(id) => setLiked((items) => items.filter((item) => item.id !== id))}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AppHeader({
+  activeTab,
+  favoriteCategory,
+  likedCount,
+  onSavedOpen,
+}: {
+  activeTab: Tab;
+  favoriteCategory: Category;
+  likedCount: number;
+  onSavedOpen: () => void;
+}) {
+  const title =
+    activeTab === "swipe"
+      ? "Stimme Swipe"
+      : activeTab === "today"
+        ? "Heute"
+        : activeTab === "explore"
+          ? "Entdecken"
+          : activeTab === "saved"
+            ? "Meine Liste"
+            : "Mein Profil";
+
+  return (
+    <header className="z-20 shrink-0 border-b border-border/60 bg-background/95 px-5 pb-3 pt-5 backdrop-blur">
+      <div className="flex items-center justify-between">
         <button className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground">
           <User className="h-5 w-5" />
         </button>
@@ -80,60 +281,101 @@ function Index() {
             Heilbronner
           </span>
           <span className="font-display text-2xl font-black text-primary">
-            Stimme<span className="text-foreground">·Swipe</span>
+            Stimme<span className="text-foreground">·{title.replace("Stimme ", "")}</span>
           </span>
         </div>
         <button
-          onClick={() => setSavedOpen(true)}
+          onClick={onSavedOpen}
           className="relative grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground"
         >
           <Bookmark className="h-5 w-5" />
-          {liked.length > 0 && (
+          {likedCount > 0 && (
             <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              {liked.length}
+              {likedCount}
             </span>
           )}
         </button>
-      </header>
+      </div>
+      {activeTab !== "swipe" && (
+        <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          Dein Feed lernt gerade besonders: {favoriteCategory}
+        </div>
+      )}
+    </header>
+  );
+}
 
-      <div className="z-10 flex shrink-0 gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CATEGORIES.map((c) => {
-          const active = c.value === activeCat;
+function SwipeView({
+  activeCat,
+  deck,
+  feedback,
+  index,
+  likedCount,
+  setActiveCat,
+  setOpenArticle,
+  setTrigger,
+  trigger,
+  visible,
+  onReset,
+  onSwipe,
+}: {
+  activeCat: Category | "Für dich";
+  deck: NewsItem[];
+  feedback: "left" | "right" | null;
+  index: number;
+  likedCount: number;
+  setActiveCat: (category: Category | "Für dich") => void;
+  setOpenArticle: (item: NewsItem) => void;
+  setTrigger: (dir: "left" | "right" | null) => void;
+  trigger: "left" | "right" | null;
+  visible: NewsItem[];
+  onReset: () => void;
+  onSwipe: (dir: "left" | "right") => void;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      className="flex h-full flex-col overflow-hidden"
+    >
+      <div className="z-10 flex shrink-0 gap-2 overflow-x-auto px-5 pb-3 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {CATEGORIES.map((category) => {
+          const active = category.value === activeCat;
           return (
             <button
-              key={c.value}
-              onClick={() => setActiveCat(c.value)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-                active
-                  ? "bg-foreground text-background"
-                  : "bg-secondary text-secondary-foreground"
+              key={category.value}
+              onClick={() => setActiveCat(category.value)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                active ? "bg-foreground text-background" : "bg-secondary text-secondary-foreground"
               }`}
             >
-              {c.label}
+              {category.label}
             </button>
           );
         })}
       </div>
 
-      <div className="relative flex-1 px-5 pb-3 pt-2">
+      <div className="relative flex-1 px-5 pb-2 pt-1">
         <div className="relative h-full w-full">
           {index >= deck.length || deck.length === 0 ? (
             <EmptyState
-              onReset={reset}
-              likedCount={liked.length}
+              onReset={onReset}
+              likedCount={likedCount}
               hasItems={deck.length > 0}
               category={activeCat}
             />
           ) : (
-            visible.map((item, i) => {
-              const stackIdx = visible.length - 1 - i;
+            visible.map((item, itemIndex) => {
+              const stackIdx = visible.length - 1 - itemIndex;
               return (
                 <SwipeCard
                   key={`${activeCat}-${item.id}`}
                   item={item}
                   index={stackIdx}
                   isTop={stackIdx === 0}
-                  onSwipe={completeSwipe}
+                  onSwipe={onSwipe}
                   onTap={() => setOpenArticle(item)}
                   triggerSwipe={stackIdx === 0 ? trigger : null}
                 />
@@ -157,11 +399,11 @@ function Index() {
       </div>
 
       {index < deck.length && deck.length > 0 && (
-        <div className="z-10 flex shrink-0 items-center justify-center gap-6 px-5 pb-6 pt-2">
+        <div className="z-10 flex shrink-0 items-center justify-center gap-6 px-5 pb-4 pt-2">
           <ActionButton
             onClick={() => !trigger && setTrigger("left")}
             color="nope"
-            label="Skip"
+            label="Weniger davon"
           >
             <X className="h-7 w-7" strokeWidth={3} />
           </ActionButton>
@@ -176,32 +418,529 @@ function Index() {
           <ActionButton
             onClick={() => !trigger && setTrigger("right")}
             color="like"
-            label="Mehr"
+            label="Mehr davon"
           >
             <Heart className="h-7 w-7" strokeWidth={3} />
           </ActionButton>
         </div>
       )}
 
-      <p className="z-10 shrink-0 pb-3 text-center text-[11px] text-muted-foreground">
-        Swipe rechts für{" "}
-        <span className="font-semibold text-[var(--color-like)]">mehr davon</span> •
-        links für <span className="font-semibold text-[var(--color-nope)]">weniger</span>{" "}
-        • Tippen zum Lesen
+      <p className="z-10 shrink-0 px-5 pb-3 text-center text-[11px] text-muted-foreground">
+        Rechts: mehr davon. Links: weniger davon. Tippen: lesen.
       </p>
+    </motion.section>
+  );
+}
 
-      <ArticleSheet item={openArticle} onClose={() => setOpenArticle(null)} />
-      <SavedSheet
-        open={savedOpen}
-        items={liked}
-        onClose={() => setSavedOpen(false)}
-        onOpenArticle={(it) => {
-          setSavedOpen(false);
-          setTimeout(() => setOpenArticle(it), 200);
-        }}
-        onRemove={(id) => setLiked((l) => l.filter((x) => x.id !== id))}
-      />
+function TodayView({
+  feed,
+  favoriteCategory,
+  liked,
+  onOpenArticle,
+}: {
+  feed: NewsItem[];
+  favoriteCategory: Category;
+  liked: NewsItem[];
+  onOpenArticle: (item: NewsItem) => void;
+}) {
+  const lead = feed[0];
+  const likedIds = new Set(liked.map((item) => item.id));
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      className="h-full overflow-y-auto scroll-smooth px-5 pt-4 [scroll-snap-type:y_mandatory]"
+    >
+      <div className="flex flex-col gap-4 pb-6">
+        {feed.map((item, itemIndex) => (
+          <TodayStory
+            key={item.id}
+            item={item}
+            isLead={item.id === lead.id}
+            isSaved={likedIds.has(item.id)}
+            isPersonalized={item.category === favoriteCategory}
+            position={itemIndex + 1}
+            total={feed.length}
+            favoriteCategory={favoriteCategory}
+            likedCount={liked.length}
+            onClick={() => onOpenArticle(item)}
+          />
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+function TodayStory({
+  item,
+  isLead,
+  isSaved,
+  isPersonalized,
+  position,
+  total,
+  favoriteCategory,
+  likedCount,
+  onClick,
+}: {
+  item: NewsItem;
+  isLead: boolean;
+  isSaved: boolean;
+  isPersonalized: boolean;
+  position: number;
+  total: number;
+  favoriteCategory: Category;
+  likedCount: number;
+  onClick: () => void;
+}) {
+  const whyItMatters =
+    item.category === "Lokal"
+      ? "Direkt relevant für Wege, Treffpunkte und Alltag in Heilbronn."
+      : item.category === "Kultur"
+        ? "Gut für Wochenendplanung, Freundeskreis und lokale Szenen."
+        : item.category === "Sport"
+          ? "Schneller Überblick über Teams und Events aus der Region."
+          : item.category === "Politik"
+            ? "Kurz erklärt, was Entscheidungen konkret für junge Menschen ändern."
+            : item.category === "Wirtschaft"
+              ? "Wichtig für Jobs, Ausbildung und die Zukunft der Region."
+              : "Eine lokale Geschichte, die gerade Gesprächsstoff liefert.";
+
+  return (
+    <article className="flex min-h-[calc(100dvh-235px)] scroll-mt-4 flex-col overflow-hidden rounded-3xl bg-card shadow-[0_18px_50px_-28px_rgba(0,0,0,0.38)] [scroll-snap-align:start] sm:min-h-[610px]">
+      <button onClick={onClick} className="group flex flex-1 flex-col text-left">
+        <div className="relative h-[38%] min-h-52 overflow-hidden">
+          <img
+            src={item.image}
+            alt={item.title}
+            className="h-full w-full object-cover transition duration-500 group-active:scale-[1.02]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/10" />
+          <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg">
+              {isLead ? "Wichtig heute" : item.category}
+            </span>
+            {isPersonalized && (
+              <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-primary shadow-lg backdrop-blur">
+                Für dich
+              </span>
+            )}
+          </div>
+          <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-black/45 px-3 py-1 text-xs text-white backdrop-blur-sm">
+            <Clock className="h-3.5 w-3.5" />
+            {item.readTime}
+          </div>
+          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4 text-white">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">
+                Heute {position}/{total}
+              </p>
+              <h2 className="mt-1 font-display text-3xl font-bold leading-tight">{item.title}</h2>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col p-4">
+          <p className="line-clamp-3 text-[15px] leading-relaxed text-foreground">{item.summary}</p>
+
+          <div className="mt-3 rounded-2xl bg-secondary p-3">
+            <div className="flex items-start gap-3">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold">Warum das zählt</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{whyItMatters}</p>
+              </div>
+            </div>
+          </div>
+
+          {isLead && (
+            <div className="mt-3 rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+              <div className="flex items-start gap-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">Swipe wirkt hier mit</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Redaktionell wichtige Stories bleiben drin. {favoriteCategory} rückt für dich
+                    höher.
+                  </p>
+                  <p className="mt-2 text-[11px] font-semibold text-primary">
+                    {likedCount} Signale gesammelt
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-auto flex items-center justify-between pt-4">
+            <span className="text-xs font-semibold text-muted-foreground">
+              Nach unten für die nächste Story
+            </span>
+            <span className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-md">
+              Lesen
+              <ChevronRight className="h-4 w-4" />
+            </span>
+          </div>
+        </div>
+      </button>
+      <div className="flex shrink-0 items-center justify-around border-t border-border bg-background/80 px-3 py-3">
+        <button className="flex items-center gap-2 rounded-full bg-secondary px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <Share2 className="h-4 w-4" />
+          Teilen
+        </button>
+        <button className="flex items-center gap-2 rounded-full bg-secondary px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <Bookmark className={`h-4 w-4 ${isSaved ? "fill-primary text-primary" : ""}`} />
+          {isSaved ? "Gemerkt" : "Merken"}
+        </button>
+        <button
+          onClick={onClick}
+          className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+        >
+          Voll lesen
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function ExploreView({
+  favoriteCategory,
+  onCategorySelect,
+}: {
+  favoriteCategory: Category;
+  onCategorySelect: (category: Category) => void;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      className="h-full overflow-y-auto px-5 pb-6 pt-4"
+    >
+      <div className="rounded-3xl bg-card p-5 shadow-sm">
+        <span className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Themenradar
+        </span>
+        <h1 className="mt-2 font-display text-3xl font-bold leading-tight">
+          Finde deinen Einstieg in Heilbronn.
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Explore ist für aktive Suche. Swipe bleibt für Entdeckung und Lernen.
+        </p>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {CATEGORIES.filter((category) => category.value !== "Für dich").map((category) => {
+          const value = category.value as Category;
+          return (
+            <button
+              key={value}
+              onClick={() => onCategorySelect(value)}
+              className="min-h-32 rounded-3xl bg-card p-4 text-left shadow-sm transition active:scale-[0.98]"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-primary">
+                  {value === favoriteCategory ? (
+                    <Flame className="h-5 w-5" />
+                  ) : (
+                    <Compass className="h-5 w-5" />
+                  )}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <h2 className="font-display text-xl font-bold">{category.label}</h2>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {TOPICS[value].join(", ")}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+    </motion.section>
+  );
+}
+
+function SavedView({
+  items,
+  onOpenArticle,
+  onRemove,
+}: {
+  items: NewsItem[];
+  onOpenArticle: (item: NewsItem) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      className="h-full overflow-y-auto px-5 pb-6 pt-4"
+    >
+      {items.length === 0 ? (
+        <div className="grid h-full place-items-center rounded-3xl border-2 border-dashed border-border bg-card p-8 text-center">
+          <div>
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-secondary text-muted-foreground">
+              <BookOpen className="h-6 w-6" />
+            </div>
+            <h1 className="font-display text-2xl font-bold">Noch keine Liste</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Swipe rechts, um Stories für später zu merken.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="rounded-3xl bg-card p-5 shadow-sm">
+            <h1 className="font-display text-2xl font-bold">Dein Abend-Briefing</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Aus deinen gespeicherten Artikeln könnte die App später ein kurzes persönliches Update
+              bauen.
+            </p>
+          </div>
+          {items.map((item) => (
+            <div key={item.id} className="flex gap-3 rounded-2xl bg-card p-3 shadow-sm">
+              <button onClick={() => onOpenArticle(item)} className="flex flex-1 gap-3 text-left">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="h-24 w-24 shrink-0 rounded-xl object-cover"
+                />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                    {item.category}
+                  </span>
+                  <h2 className="mt-1 line-clamp-2 text-sm font-bold leading-snug">{item.title}</h2>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{item.readTime}</p>
+                </div>
+              </button>
+              <button
+                onClick={() => onRemove(item.id)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+                aria-label="Entfernen"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
+function ProfileView({
+  favoriteCategory,
+  liked,
+  skipped,
+  selectedInterests,
+  setSelectedInterests,
+}: {
+  favoriteCategory: Category;
+  liked: NewsItem[];
+  skipped: NewsItem[];
+  selectedInterests: string[];
+  setSelectedInterests: (items: string[]) => void;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      className="h-full overflow-y-auto px-5 pb-6 pt-4"
+    >
+      <div className="rounded-3xl bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-foreground">
+            <User className="h-7 w-7" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold">Dein Newsprofil</h1>
+            <p className="text-sm text-muted-foreground">Aktuell stärker: {favoriteCategory}</p>
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <ProfileMetric label="Mehr" value={liked.length} />
+          <ProfileMetric label="Weniger" value={skipped.length} />
+          <ProfileMetric label="Interessen" value={selectedInterests.length} />
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-3xl bg-card p-5 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-xl font-bold">Interessen</h2>
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {INTERESTS.map((interest) => {
+            const selected = selectedInterests.includes(interest);
+            return (
+              <button
+                key={interest}
+                onClick={() =>
+                  setSelectedInterests(
+                    selected
+                      ? selectedInterests.filter((item) => item !== interest)
+                      : [...selectedInterests, interest],
+                  )
+                }
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                  selected
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground"
+                }`}
+              >
+                {interest}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-3xl bg-card p-5 shadow-sm">
+        <h2 className="font-display text-xl font-bold">Warum das wichtig ist</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Der Nutzer kann steuern, was die App lernt. Das macht Personalisierung transparenter und
+          passt besser zu einer lokalen Zeitung.
+        </p>
+      </div>
+    </motion.section>
+  );
+}
+
+function ProfileMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-secondary p-3 text-center">
+      <p className="font-display text-2xl font-bold text-primary">{value}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>
+  );
+}
+
+function Onboarding({
+  open,
+  selectedInterests,
+  setSelectedInterests,
+  onClose,
+}: {
+  open: boolean;
+  selectedInterests: string[];
+  setSelectedInterests: (items: string[]) => void;
+  onClose: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 z-50 grid place-items-center bg-black/55 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.96, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.96, y: 20 }}
+            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+            className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-[2rem] bg-background p-5 shadow-2xl"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl font-bold leading-tight">
+                  Dein Heilbronn in 60 Sekunden.
+                </h1>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Wähle ein paar Interessen. Danach lernt Swipe mit jeder Karte weiter.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map((interest) => {
+                const selected = selectedInterests.includes(interest);
+                return (
+                  <button
+                    key={interest}
+                    onClick={() =>
+                      setSelectedInterests(
+                        selected
+                          ? selectedInterests.filter((item) => item !== interest)
+                          : [...selectedInterests, interest],
+                      )
+                    }
+                    className={`flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold transition active:scale-95 ${
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {selected && <Check className="h-3.5 w-3.5" />}
+                    {interest}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={onClose}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-md transition active:scale-[0.98]"
+            >
+              Start swipen
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function BottomNav({
+  activeTab,
+  onChange,
+  savedCount,
+}: {
+  activeTab: Tab;
+  onChange: (tab: Tab) => void;
+  savedCount: number;
+}) {
+  const items: { tab: Tab; label: string; icon: ReactNode }[] = [
+    { tab: "swipe", label: "Swipe", icon: <Sparkles className="h-5 w-5" /> },
+    { tab: "today", label: "Heute", icon: <Home className="h-5 w-5" /> },
+    { tab: "explore", label: "Suche", icon: <Compass className="h-5 w-5" /> },
+    { tab: "saved", label: "Liste", icon: <Bookmark className="h-5 w-5" /> },
+    { tab: "profile", label: "Profil", icon: <Settings className="h-5 w-5" /> },
+  ];
+
+  return (
+    <nav className="z-20 shrink-0 border-t border-border bg-card px-2 pb-3 pt-2">
+      <div className="grid grid-cols-5 gap-1">
+        {items.map((item) => {
+          const active = activeTab === item.tab;
+          return (
+            <button
+              key={item.tab}
+              onClick={() => onChange(item.tab)}
+              className={`relative flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-semibold transition active:scale-95 ${
+                active ? "bg-primary/10 text-primary" : "text-muted-foreground"
+              }`}
+            >
+              {item.icon}
+              <span className="truncate">{item.label}</span>
+              {item.tab === "saved" && savedCount > 0 && (
+                <span className="absolute right-3 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+                  {savedCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -212,7 +951,7 @@ function ActionButton({
   label,
   small,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick: () => void;
   color: "nope" | "like" | "brand";
   label: string;

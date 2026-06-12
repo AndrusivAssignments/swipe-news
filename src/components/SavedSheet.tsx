@@ -53,8 +53,7 @@ export function SavedSheet({ open, items, onClose, onOpenArticle, onRemove }: Pr
                       <BookOpen className="h-6 w-6" />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Noch nichts gespeichert. Swipe nach rechts, um Artikel
-                      hierher zu legen.
+                      Noch nichts gespeichert. Swipe nach rechts, um Artikel hierher zu legen.
                     </p>
                   </div>
                 </div>

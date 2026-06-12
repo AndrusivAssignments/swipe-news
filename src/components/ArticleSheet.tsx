@@ -28,11 +28,7 @@ export function ArticleSheet({ item, onClose }: Props) {
           >
             <div className="flex h-full flex-col">
               <div className="relative h-56 shrink-0 overflow-hidden">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="h-full w-full object-cover"
-                />
+                <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-black/30" />
                 <button
                   onClick={onClose}
@@ -63,14 +59,11 @@ export function ArticleSheet({ item, onClose }: Props) {
                   {item.summary}
                 </p>
                 <div className="my-4 h-px bg-border" />
-                <p className="text-base leading-relaxed text-muted-foreground">
-                  {item.body}
-                </p>
+                <p className="text-base leading-relaxed text-muted-foreground">{item.body}</p>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Heilbronner
-                  Stimme bietet Ihnen jeden Tag die wichtigsten Nachrichten aus der
-                  Region — kompakt, schnell und genau auf Ihre Interessen
-                  zugeschnitten.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Heilbronner Stimme bietet
+                  Ihnen jeden Tag die wichtigsten Nachrichten aus der Region - kompakt, schnell und
+                  genau auf Ihre Interessen zugeschnitten.
                 </p>
               </div>
 

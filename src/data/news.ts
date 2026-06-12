@@ -1,10 +1,4 @@
-export type Category =
-  | "Lokal"
-  | "Sport"
-  | "Politik"
-  | "Kultur"
-  | "Wirtschaft"
-  | "Panorama";
+export type Category = "Lokal" | "Sport" | "Politik" | "Kultur" | "Wirtschaft" | "Panorama";
 
 export interface NewsItem {
   id: string;
@@ -17,7 +11,7 @@ export interface NewsItem {
   publishedAt: string;
 }
 
-// Unsplash images — generic, news-friendly
+// Unsplash images - generic, news-friendly
 export const NEWS: NewsItem[] = [
   {
     id: "1",
@@ -36,7 +30,7 @@ export const NEWS: NewsItem[] = [
     category: "Sport",
     title: "Heilbronner Falken vor entscheidendem Playoff-Spiel",
     summary:
-      "Die Heilbronner Falken stehen heute Abend vor dem wichtigsten Spiel der Saison. Bei einem Sieg in Bietigheim ziehen die Eishockeyspieler ins Halbfinale der DEL2 ein. Trainer Stephan Mair setzt auf die junge Sturmreihe. Über 4.000 Fans werden in der Halle erwartet — Tickets sind seit Tagen ausverkauft.",
+      "Die Heilbronner Falken stehen heute Abend vor dem wichtigsten Spiel der Saison. Bei einem Sieg in Bietigheim ziehen die Eishockeyspieler ins Halbfinale der DEL2 ein. Trainer Stephan Mair setzt auf die junge Sturmreihe. Über 4.000 Fans werden in der Halle erwartet - Tickets sind seit Tagen ausverkauft.",
     body: "Spielbeginn ist um 19:30 Uhr in der EgeTrans Arena. Die Falken liegen in der Best-of-Five-Serie mit 2:1 vorne. Captain Frederik Cabana sagte: 'Wir sind heiß auf das Halbfinale.' Live-Übertragung gibt es bei SpradeTV. Im Falle eines Sieges plant der Verein eine Public-Viewing-Aktion am Heilbronner Marktplatz.",
     image:
       "https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=800&q=80",
@@ -96,8 +90,8 @@ export const NEWS: NewsItem[] = [
     category: "Lokal",
     title: "Käthchenhaus wird zum interaktiven Museum",
     summary:
-      "Das historische Käthchenhaus in der Innenstadt wird ab Herbst zum interaktiven Museum mit VR-Erlebnis. Besucher können die Heilbronner Geschichte mittels Augmented Reality erleben — von Kleists Drama bis zur Stadtzerstörung 1944. Der Eintritt für unter 25-Jährige ist frei. Erwartet werden über 100.000 Besucher im ersten Jahr.",
-    body: "Das Konzept stammt vom Berliner Studio 'Phase 7'. Highlights sind eine VR-Tour durch das mittelalterliche Heilbronn und ein interaktives Theaterstück, bei dem Besucher Käthchens Entscheidungen treffen. Die Eröffnung ist für den 9. November geplant — dem Jahrestag der Zerstörung Heilbronns im Zweiten Weltkrieg.",
+      "Das historische Käthchenhaus in der Innenstadt wird ab Herbst zum interaktiven Museum mit VR-Erlebnis. Besucher können die Heilbronner Geschichte mittels Augmented Reality erleben - von Kleists Drama bis zur Stadtzerstörung 1944. Der Eintritt für unter 25-Jährige ist frei. Erwartet werden über 100.000 Besucher im ersten Jahr.",
+    body: "Das Konzept stammt vom Berliner Studio 'Phase 7'. Highlights sind eine VR-Tour durch das mittelalterliche Heilbronn und ein interaktives Theaterstück, bei dem Besucher Käthchens Entscheidungen treffen. Die Eröffnung ist für den 9. November geplant - dem Jahrestag der Zerstörung Heilbronns im Zweiten Weltkrieg.",
     image:
       "https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=800&q=80",
     readTime: "3 Min.",
