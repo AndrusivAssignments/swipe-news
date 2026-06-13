@@ -17,7 +17,6 @@ import {
   Check,
   ChevronRight,
   SlidersHorizontal,
-  Share2,
   BookOpen,
 } from "lucide-react";
 import { NEWS, type NewsItem, type Category } from "@/data/news";
@@ -40,8 +39,9 @@ export const Route = createFileRoute("/")({
 });
 
 type Tab = "swipe" | "today" | "explore" | "saved" | "profile";
+type SwipeMode = "Für dich" | "Entdecken";
 
-const CATEGORIES: { label: string; value: Category | "Für dich" }[] = [
+const TODAY_FILTERS: { label: string; value: Category | "Für dich" }[] = [
   { label: "Für dich", value: "Für dich" },
   { label: "Lokal", value: "Lokal" },
   { label: "Sport", value: "Sport" },
@@ -49,6 +49,19 @@ const CATEGORIES: { label: string; value: Category | "Für dich" }[] = [
   { label: "Kultur", value: "Kultur" },
   { label: "Wirtschaft", value: "Wirtschaft" },
   { label: "Panorama", value: "Panorama" },
+];
+
+const SWIPE_MODES: { label: string; value: SwipeMode; helper: string }[] = [
+  {
+    label: "Für dich",
+    value: "Für dich",
+    helper: "Basierend auf deinen bisherigen Swipes.",
+  },
+  {
+    label: "Entdecken",
+    value: "Entdecken",
+    helper: "Überraschende Themen außerhalb deiner Routine.",
+  },
 ];
 
 const INTERESTS = [
@@ -73,7 +86,8 @@ const TOPICS: Record<Category, string[]> = {
 
 function Index() {
   const [activeTab, setActiveTab] = useState<Tab>("swipe");
-  const [activeCat, setActiveCat] = useState<Category | "Für dich">("Für dich");
+  const [activeCat, setActiveCat] = useState<SwipeMode>("Für dich");
+  const [todayCat, setTodayCat] = useState<Category | "Für dich">("Für dich");
   const [index, setIndex] = useState(0);
   const [liked, setLiked] = useState<NewsItem[]>([]);
   const [skipped, setSkipped] = useState<NewsItem[]>([]);
@@ -88,10 +102,25 @@ function Index() {
     "Wochenendtipps",
   ]);
 
-  const deck = useMemo(
-    () => (activeCat === "Für dich" ? NEWS : NEWS.filter((n) => n.category === activeCat)),
-    [activeCat],
-  );
+  const deck = useMemo(() => {
+    if (activeCat === "Entdecken") {
+      return [...NEWS].sort((a, b) => {
+        const aSeen =
+          Number(liked.some((item) => item.id === a.id)) +
+          Number(skipped.some((item) => item.id === a.id));
+        const bSeen =
+          Number(liked.some((item) => item.id === b.id)) +
+          Number(skipped.some((item) => item.id === b.id));
+        return aSeen - bSeen || b.id.localeCompare(a.id);
+      });
+    }
+
+    return [...NEWS].sort((a, b) => {
+      const aLiked = liked.some((item) => item.category === a.category) ? 1 : 0;
+      const bLiked = liked.some((item) => item.category === b.category) ? 1 : 0;
+      return bLiked - aLiked;
+    });
+  }, [activeCat, liked, skipped]);
 
   const categorySignals = useMemo(() => {
     const counts = new Map<Category, { likes: number; skips: number }>();
@@ -115,14 +144,16 @@ function Index() {
   }, [categorySignals]);
 
   const todayFeed = useMemo(() => {
-    return [...NEWS].sort((a, b) => {
+    const source =
+      todayCat === "Für dich" ? NEWS : NEWS.filter((item) => item.category === todayCat);
+    return [...source].sort((a, b) => {
       const aSignal = categorySignals.get(a.category);
       const bSignal = categorySignals.get(b.category);
       const aScore = (aSignal?.likes ?? 0) - (aSignal?.skips ?? 0);
       const bScore = (bSignal?.likes ?? 0) - (bSignal?.skips ?? 0);
       return bScore - aScore;
     });
-  }, [categorySignals]);
+  }, [categorySignals, todayCat]);
 
   useEffect(() => {
     setIndex(0);
@@ -161,6 +192,7 @@ function Index() {
           activeTab={activeTab}
           favoriteCategory={favoriteCategory}
           likedCount={liked.length}
+          onProfileOpen={() => setActiveTab("profile")}
           onSavedOpen={() => setSavedOpen(true)}
         />
 
@@ -189,6 +221,10 @@ function Index() {
                 feed={todayFeed}
                 favoriteCategory={favoriteCategory}
                 liked={liked}
+                selectedCategory={todayCat}
+                onCategoryChange={setTodayCat}
+                onGoSwipe={() => setActiveTab("swipe")}
+                onShowAll={() => setTodayCat("Für dich")}
                 onOpenArticle={setOpenArticle}
               />
             )}
@@ -197,8 +233,8 @@ function Index() {
                 key="explore"
                 favoriteCategory={favoriteCategory}
                 onCategorySelect={(category) => {
-                  setActiveCat(category);
-                  setActiveTab("swipe");
+                  setTodayCat(category);
+                  setActiveTab("today");
                 }}
               />
             )}
@@ -252,11 +288,13 @@ function AppHeader({
   activeTab,
   favoriteCategory,
   likedCount,
+  onProfileOpen,
   onSavedOpen,
 }: {
   activeTab: Tab;
   favoriteCategory: Category;
   likedCount: number;
+  onProfileOpen: () => void;
   onSavedOpen: () => void;
 }) {
   const title =
@@ -273,7 +311,11 @@ function AppHeader({
   return (
     <header className="z-20 shrink-0 border-b border-border/60 bg-background/95 px-5 pb-3 pt-5 backdrop-blur">
       <div className="flex items-center justify-between">
-        <button className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground">
+        <button
+          onClick={onProfileOpen}
+          aria-label="Profil öffnen"
+          className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground transition active:scale-95"
+        >
           <User className="h-5 w-5" />
         </button>
         <div className="flex flex-col items-center leading-none">
@@ -320,12 +362,12 @@ function SwipeView({
   onReset,
   onSwipe,
 }: {
-  activeCat: Category | "Für dich";
+  activeCat: SwipeMode;
   deck: NewsItem[];
   feedback: "left" | "right" | null;
   index: number;
   likedCount: number;
-  setActiveCat: (category: Category | "Für dich") => void;
+  setActiveCat: (mode: SwipeMode) => void;
   setOpenArticle: (item: NewsItem) => void;
   setTrigger: (dir: "left" | "right" | null) => void;
   trigger: "left" | "right" | null;
@@ -340,24 +382,31 @@ function SwipeView({
       exit={{ opacity: 0, y: -14 }}
       className="flex h-full flex-col overflow-hidden"
     >
-      <div className="z-10 flex shrink-0 gap-2 overflow-x-auto px-5 pb-3 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CATEGORIES.map((category) => {
-          const active = category.value === activeCat;
-          return (
-            <button
-              key={category.value}
-              onClick={() => setActiveCat(category.value)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition active:scale-95 ${
-                active ? "bg-foreground text-background" : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {category.label}
-            </button>
-          );
-        })}
+      <div className="z-10 shrink-0 px-5 pb-2 pt-3">
+        <div className="grid grid-cols-2 gap-1.5 rounded-full bg-secondary p-1">
+          {SWIPE_MODES.map((mode) => {
+            const active = mode.value === activeCat;
+            const Icon = mode.value === "Für dich" ? Sparkles : Compass;
+            return (
+              <button
+                key={mode.value}
+                onClick={() => setActiveCat(mode.value)}
+                aria-label={`${mode.label}: ${mode.helper}`}
+                className={`flex min-h-11 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-black transition active:scale-[0.98] ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow-[0_10px_22px_-12px_rgba(174,31,38,0.75)]"
+                    : "bg-card text-foreground shadow-sm ring-1 ring-border"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {mode.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="relative flex-1 px-5 pb-2 pt-1">
+      <div className="relative flex-1 px-5 pb-2 pt-0">
         <div className="relative h-full w-full">
           {index >= deck.length || deck.length === 0 ? (
             <EmptyState
@@ -436,11 +485,19 @@ function TodayView({
   feed,
   favoriteCategory,
   liked,
+  selectedCategory,
+  onCategoryChange,
+  onGoSwipe,
+  onShowAll,
   onOpenArticle,
 }: {
   feed: NewsItem[];
   favoriteCategory: Category;
   liked: NewsItem[];
+  selectedCategory: Category | "Für dich";
+  onCategoryChange: (category: Category | "Für dich") => void;
+  onGoSwipe: () => void;
+  onShowAll: () => void;
   onOpenArticle: (item: NewsItem) => void;
 }) {
   const lead = feed[0];
@@ -454,6 +511,10 @@ function TodayView({
       className="h-full overflow-y-auto scroll-smooth px-5 pt-4 [scroll-snap-type:y_mandatory]"
     >
       <div className="flex flex-col gap-4 pb-6">
+        <TodayFilterBar selectedCategory={selectedCategory} onCategoryChange={onCategoryChange} />
+        {selectedCategory !== "Für dich" && (
+          <TopicIntroCard category={selectedCategory} count={feed.length} onShowAll={onShowAll} />
+        )}
         {feed.map((item, itemIndex) => (
           <TodayStory
             key={item.id}
@@ -468,8 +529,127 @@ function TodayView({
             onClick={() => onOpenArticle(item)}
           />
         ))}
+        <TodayCompleteCard
+          favoriteCategory={favoriteCategory}
+          likedCount={liked.length}
+          total={feed.length}
+          onGoSwipe={onGoSwipe}
+        />
       </div>
     </motion.section>
+  );
+}
+
+function TodayFilterBar({
+  selectedCategory,
+  onCategoryChange,
+}: {
+  selectedCategory: Category | "Für dich";
+  onCategoryChange: (category: Category | "Für dich") => void;
+}) {
+  return (
+    <div className="sticky top-0 z-20 -mx-5 bg-background/95 px-5 pb-2 pt-1 backdrop-blur [scroll-snap-align:start]">
+      <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {TODAY_FILTERS.map((category) => {
+          const active = category.value === selectedCategory;
+          return (
+            <button
+              key={category.value}
+              onClick={() => onCategoryChange(category.value)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                active ? "bg-foreground text-background" : "bg-secondary text-secondary-foreground"
+              }`}
+            >
+              {category.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TopicIntroCard({
+  category,
+  count,
+  onShowAll,
+}: {
+  category: Category;
+  count: number;
+  onShowAll: () => void;
+}) {
+  return (
+    <section className="scroll-mt-4 rounded-3xl border border-primary/15 bg-primary/5 p-5 [scroll-snap-align:start]">
+      <div className="flex items-start gap-3">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+          <Compass className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+            Suche geöffnet
+          </p>
+          <h2 className="mt-1 font-display text-2xl font-bold leading-tight">
+            {category} im Scroll
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            {count} Meldungen. Scrolle nach unten, um eine Story nach der anderen zu lesen.
+          </p>
+          <button
+            onClick={onShowAll}
+            className="mt-3 rounded-full bg-card px-4 py-2 text-xs font-bold text-primary shadow-sm transition active:scale-95"
+          >
+            Alle Themen zeigen
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TodayCompleteCard({
+  favoriteCategory,
+  likedCount,
+  total,
+  onGoSwipe,
+}: {
+  favoriteCategory: Category;
+  likedCount: number;
+  total: number;
+  onGoSwipe: () => void;
+}) {
+  return (
+    <section className="grid min-h-[calc(100dvh-235px)] scroll-mt-4 place-items-center rounded-3xl border border-primary/15 bg-card p-6 text-center shadow-[0_18px_50px_-28px_rgba(0,0,0,0.38)] [scroll-snap-align:start] sm:min-h-[610px]">
+      <div>
+        <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-foreground">
+          <Check className="h-8 w-8" />
+        </div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Heute abgeschlossen
+        </p>
+        <h2 className="mt-2 font-display text-4xl font-bold leading-tight">
+          Du bist auf dem neuesten Stand.
+        </h2>
+        <p className="mx-auto mt-3 max-w-[28ch] text-sm leading-relaxed text-muted-foreground">
+          {total} Meldungen gelesen. Swipe weiter, damit dein Feed bei {favoriteCategory} noch
+          besser wird.
+        </p>
+        <div className="mt-5 rounded-2xl bg-secondary p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Heute gelernt
+          </p>
+          <p className="mt-1 text-sm font-bold text-foreground">
+            {likedCount} persönliche Signale für deinen nächsten Feed
+          </p>
+        </div>
+        <button
+          onClick={onGoSwipe}
+          className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-md transition active:scale-[0.98]"
+        >
+          Weiter swipen
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -587,11 +767,7 @@ function TodayStory({
           </div>
         </div>
       </button>
-      <div className="flex shrink-0 items-center justify-around border-t border-border bg-background/80 px-3 py-3">
-        <button className="flex items-center gap-2 rounded-full bg-secondary px-3 py-2 text-xs font-semibold text-muted-foreground">
-          <Share2 className="h-4 w-4" />
-          Teilen
-        </button>
+      <div className="flex shrink-0 items-center justify-between border-t border-border bg-background/80 px-4 py-3">
         <button className="flex items-center gap-2 rounded-full bg-secondary px-3 py-2 text-xs font-semibold text-muted-foreground">
           <Bookmark className={`h-4 w-4 ${isSaved ? "fill-primary text-primary" : ""}`} />
           {isSaved ? "Gemerkt" : "Merken"}
@@ -629,12 +805,12 @@ function ExploreView({
           Finde deinen Einstieg in Heilbronn.
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Explore ist für aktive Suche. Swipe bleibt für Entdeckung und Lernen.
+          Wähle ein Thema und lies die passenden Meldungen im Heute-Scroll.
         </p>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        {CATEGORIES.filter((category) => category.value !== "Für dich").map((category) => {
+        {TODAY_FILTERS.filter((category) => category.value !== "Für dich").map((category) => {
           const value = category.value as Category;
           return (
             <button
