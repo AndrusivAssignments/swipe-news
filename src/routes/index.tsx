@@ -97,6 +97,12 @@ function Index() {
   const [feedback, setFeedback] = useState<"left" | "right" | null>(null);
   const [trigger, setTrigger] = useState<"left" | "right" | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 1600);
+    return () => clearTimeout(timer);
+  }, []);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([
     "Events",
     "Campus",
@@ -272,6 +278,8 @@ function Index() {
           setSelectedInterests={setSelectedInterests}
           onClose={() => setShowOnboarding(false)}
         />
+
+        <Splash show={showSplash} />
 
         <ArticleSheet item={openArticle} onClose={() => setOpenArticle(null)} />
         <SavedSheet
@@ -1006,6 +1014,79 @@ function ProfileMetric({ label, value }: { label: string; value: number }) {
       <p className="font-display text-2xl font-bold text-primary">{value}</p>
       <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>
+  );
+}
+
+function Splash({ show }: { show: boolean }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 1.03 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="absolute inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden bg-[#FBF7F2] text-[#16181F]"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="pointer-events-none absolute -top-24 -right-20 h-80 w-80 rounded-full bg-[#FFD9C2] blur-3xl"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 0.85, scale: 1 }}
+            transition={{ duration: 1.1, ease: "easeOut", delay: 0.05 }}
+            className="pointer-events-none absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-[#D9E6FF] blur-3xl"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 0.6, scale: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
+            className="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#FFE9D6] blur-3xl"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative flex flex-col items-center"
+          >
+            <motion.div
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 220, damping: 18, delay: 0.05 }}
+              className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-white shadow-[0_18px_40px_-18px_rgba(20,24,40,0.35)] ring-1 ring-black/5"
+            >
+              <Sparkles className="h-6 w-6 text-primary" />
+            </motion.div>
+
+            <span className="text-[10px] font-semibold uppercase tracking-[0.45em] text-[#16181F]/55">
+              Heilbronner
+            </span>
+            <motion.h1
+              initial={{ opacity: 0, letterSpacing: "0.04em" }}
+              animate={{ opacity: 1, letterSpacing: "-0.02em" }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="mt-1 font-display text-[3.5rem] font-black leading-none"
+            >
+              Stimme
+            </motion.h1>
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-3 flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="text-[11px] font-bold tracking-[0.3em] text-[#16181F]/80">
+                SWIPE
+              </span>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
