@@ -91,6 +91,7 @@ function Index() {
   const [index, setIndex] = useState(0);
   const [liked, setLiked] = useState<NewsItem[]>([]);
   const [skipped, setSkipped] = useState<NewsItem[]>([]);
+  const [swipedIds, setSwipedIds] = useState<string[]>([]);
   const [openArticle, setOpenArticle] = useState<NewsItem | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
   const [feedback, setFeedback] = useState<"left" | "right" | null>(null);
@@ -102,25 +103,23 @@ function Index() {
     "Wochenendtipps",
   ]);
 
+  const seenIds = useMemo(() => {
+    return new Set(swipedIds);
+  }, [swipedIds]);
+
   const deck = useMemo(() => {
+    const unseen = NEWS.filter((item) => !seenIds.has(item.id));
+
     if (activeCat === "Entdecken") {
-      return [...NEWS].sort((a, b) => {
-        const aSeen =
-          Number(liked.some((item) => item.id === a.id)) +
-          Number(skipped.some((item) => item.id === a.id));
-        const bSeen =
-          Number(liked.some((item) => item.id === b.id)) +
-          Number(skipped.some((item) => item.id === b.id));
-        return aSeen - bSeen || b.id.localeCompare(a.id);
-      });
+      return [...unseen].sort((a, b) => b.id.localeCompare(a.id));
     }
 
-    return [...NEWS].sort((a, b) => {
+    return [...unseen].sort((a, b) => {
       const aLiked = liked.some((item) => item.category === a.category) ? 1 : 0;
       const bLiked = liked.some((item) => item.category === b.category) ? 1 : 0;
       return bLiked - aLiked;
     });
-  }, [activeCat, liked, skipped]);
+  }, [activeCat, liked, seenIds]);
 
   const categorySignals = useMemo(() => {
     const counts = new Map<Category, { likes: number; skips: number }>();
@@ -160,14 +159,15 @@ function Index() {
     setTrigger(null);
   }, [activeCat]);
 
-  const visible = deck.slice(index, index + 3).reverse();
+  const visible = deck.slice(0, 3).reverse();
 
   const completeSwipe = (dir: "left" | "right") => {
-    const item = deck[index];
+    const item = deck[0];
     if (!item) return;
 
     setFeedback(dir);
     setTimeout(() => setFeedback(null), 300);
+    setSwipedIds((ids) => (ids.includes(item.id) ? ids : [...ids, item.id]));
 
     if (dir === "right") {
       setLiked((items) =>
@@ -179,11 +179,15 @@ function Index() {
       );
     }
 
-    setIndex((current) => current + 1);
+    setIndex(0);
     setTrigger(null);
   };
 
-  const reset = () => setIndex(0);
+  const reset = () => {
+    setIndex(0);
+    setSwipedIds([]);
+    setSkipped([]);
+  };
 
   return (
     <div className="min-h-[100dvh] bg-secondary px-0 text-foreground sm:grid sm:place-items-center sm:p-6">
@@ -210,6 +214,7 @@ function Index() {
                 setOpenArticle={setOpenArticle}
                 setTrigger={setTrigger}
                 trigger={trigger}
+                totalCount={NEWS.length}
                 visible={visible}
                 onReset={reset}
                 onSwipe={completeSwipe}
@@ -358,6 +363,7 @@ function SwipeView({
   setOpenArticle,
   setTrigger,
   trigger,
+  totalCount,
   visible,
   onReset,
   onSwipe,
@@ -371,6 +377,7 @@ function SwipeView({
   setOpenArticle: (item: NewsItem) => void;
   setTrigger: (dir: "left" | "right" | null) => void;
   trigger: "left" | "right" | null;
+  totalCount: number;
   visible: NewsItem[];
   onReset: () => void;
   onSwipe: (dir: "left" | "right") => void;
@@ -412,7 +419,7 @@ function SwipeView({
             <EmptyState
               onReset={onReset}
               likedCount={likedCount}
-              hasItems={deck.length > 0}
+              hasItems={totalCount > 0}
               category={activeCat}
             />
           ) : (
@@ -694,6 +701,9 @@ function TodayStory({
           <img
             src={item.image}
             alt={item.title}
+            onError={(event) => {
+              event.currentTarget.src = `https://picsum.photos/seed/${item.id}/900/650`;
+            }}
             className="h-full w-full object-cover transition duration-500 group-active:scale-[1.02]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/10" />
@@ -715,6 +725,9 @@ function TodayStory({
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">
                 Heute {position}/{total}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-white/80">
+                Veröffentlicht: {item.publishedAt}
               </p>
               <h2 className="mt-1 font-display text-3xl font-bold leading-tight">{item.title}</h2>
             </div>

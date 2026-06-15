@@ -1,6 +1,6 @@
 import { motion, useMotionValue, useTransform, type PanInfo, animate } from "framer-motion";
 import { Clock } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { NewsItem } from "@/data/news";
 
 interface Props {
@@ -20,22 +20,26 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: 
   const nopeOpacity = useTransform(x, [-140, -20], [1, 0]);
   const [exiting, setExiting] = useState(false);
 
-  const flyOff = (dir: "left" | "right") => {
-    if (exiting) return;
-    setExiting(true);
-    const targetX = dir === "right" ? 600 : -600;
-    animate(x, targetX, {
-      type: "tween",
-      duration: 0.35,
-      ease: [0.32, 0, 0.67, 0],
-      onComplete: () => onSwipe(dir),
-    });
-  };
+  const flyOff = useCallback(
+    (dir: "left" | "right") => {
+      if (exiting) return;
+      setExiting(true);
+      const targetX = dir === "right" ? 600 : -600;
+      animate(x, targetX, {
+        type: "tween",
+        duration: 0.35,
+        ease: [0.32, 0, 0.67, 0],
+        onComplete: () => onSwipe(dir),
+      });
+    },
+    [exiting, onSwipe, x],
+  );
 
-  // Allow parent buttons to trigger swipe animation
-  if (isTop && triggerSwipe && !exiting) {
-    flyOff(triggerSwipe);
-  }
+  useEffect(() => {
+    if (isTop && triggerSwipe && !exiting) {
+      flyOff(triggerSwipe);
+    }
+  }, [exiting, flyOff, isTop, triggerSwipe]);
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const threshold = 110;

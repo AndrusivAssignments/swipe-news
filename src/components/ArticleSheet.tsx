@@ -1,16 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import {
-  X,
-  Bookmark,
-  Clock,
-  Share2,
-  MessageCircle,
-  Link,
-  Send,
-  Copy,
-  CheckCircle2,
-} from "lucide-react";
+import { X, Bookmark, Clock, Share2, Link, Send, Copy, CheckCircle2 } from "lucide-react";
 import type { NewsItem } from "@/data/news";
 
 interface Props {
@@ -18,20 +8,19 @@ interface Props {
   onClose: () => void;
 }
 
-type ShareMode = "whatsapp" | "story" | "link";
+type ShareMode = "whatsapp" | "link";
 
 const SHARE_OPTIONS: {
   mode: ShareMode;
   label: string;
-  icon: "whatsapp" | "story" | "link";
+  icon: "whatsapp" | "link";
 }[] = [
   { mode: "whatsapp", label: "WhatsApp", icon: "whatsapp" },
-  { mode: "story", label: "Story", icon: "story" },
   { mode: "link", label: "Link", icon: "link" },
 ];
 
 const sentColorClass = (mode: ShareMode) =>
-  mode === "whatsapp" ? "bg-[#25D366]" : mode === "story" ? "bg-primary" : "bg-foreground";
+  mode === "whatsapp" ? "bg-[#25D366]" : "bg-foreground";
 
 export function ArticleSheet({ item, onClose }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
@@ -91,9 +80,9 @@ export function ArticleSheet({ item, onClose }: Props) {
                 <div className="my-4 h-px bg-border" />
                 <p className="text-base leading-relaxed text-muted-foreground">{item.body}</p>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Heilbronner Stimme bietet
-                  Ihnen jeden Tag die wichtigsten Nachrichten aus der Region - kompakt, schnell und
-                  genau auf Ihre Interessen zugeschnitten.
+                  Die Kurzfassung zeigt dir zuerst, warum die Meldung für Heilbronn und die Region
+                  relevant ist. Wenn dich das Thema interessiert, kannst du den ganzen Artikel
+                  lesen, speichern oder direkt als kompakte Karte teilen.
                 </p>
               </div>
 
@@ -153,7 +142,7 @@ export function ArticleSheet({ item, onClose }: Props) {
                     </button>
                   </div>
 
-                  <div className="mb-3 grid grid-cols-3 gap-2">
+                  <div className="mb-3 grid grid-cols-2 gap-2">
                     {SHARE_OPTIONS.map((option) => {
                       const active = shareMode === option.mode;
                       return (
@@ -181,7 +170,6 @@ export function ArticleSheet({ item, onClose }: Props) {
                             }`}
                           >
                             {option.icon === "whatsapp" && "W"}
-                            {option.icon === "story" && <MessageCircle className="h-4 w-4" />}
                             {option.icon === "link" && <Link className="h-4 w-4" />}
                           </span>
                           <span className="mt-2 block text-xs font-bold">{option.label}</span>
@@ -202,7 +190,6 @@ export function ArticleSheet({ item, onClose }: Props) {
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           {shareMode === "whatsapp" && "An WhatsApp gesendet"}
-                          {shareMode === "story" && "Story bereit zum Posten"}
                           {shareMode === "link" && "Link kopiert"}
                         </motion.div>
                       )}
@@ -226,9 +213,7 @@ export function ArticleSheet({ item, onClose }: Props) {
                         ? sentColorClass(shareMode)
                         : shareMode === "whatsapp"
                           ? "bg-[#25D366]"
-                          : shareMode === "story"
-                            ? "bg-primary"
-                            : "bg-foreground"
+                          : "bg-foreground"
                     }`}
                   >
                     {shareSent ? (
@@ -240,7 +225,6 @@ export function ArticleSheet({ item, onClose }: Props) {
                     )}
                     {shareSent && "Gesendet"}
                     {!shareSent && shareMode === "whatsapp" && "Karte in WhatsApp senden"}
-                    {!shareSent && shareMode === "story" && "Story-Karte posten"}
                     {!shareSent && shareMode === "link" && "Link mit Karte kopieren"}
                   </button>
                 </motion.div>
@@ -257,93 +241,6 @@ function SharePreview({ item, mode }: { item: NewsItem; mode: ShareMode }) {
   const shortTitle = item.title
     .replace("Neckaruferpromenade", "Neckarufer")
     .replace("öffnet im", "öffnet");
-
-  if (mode === "story") {
-    return (
-      <div className="mx-auto w-[224px] overflow-hidden rounded-[1.8rem] bg-black p-1.5 shadow-2xl ring-1 ring-white/15">
-        <div className="relative h-[452px] overflow-hidden rounded-[1.5rem] bg-[#101010]">
-          <img
-            src={item.image}
-            alt=""
-            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-45 blur-[3px]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/82 via-black/24 to-black/88" />
-
-          <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-2">
-            <button className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/12 text-white backdrop-blur">
-              <X className="h-4 w-4" />
-            </button>
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full bg-white/13 px-2 py-1.5 text-white backdrop-blur">
-              <div className="h-5 w-5 shrink-0 rounded-md bg-white/22" />
-              <span className="truncate text-[9px] font-bold">Audio hinzufügen</span>
-            </div>
-            <button className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/12 text-lg font-semibold text-white backdrop-blur">
-              Aa
-            </button>
-          </div>
-
-          <div className="absolute left-4 right-4 top-[78px]">
-            <div className="mx-auto mb-3 w-fit rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#211919] shadow-xl">
-              Habt ihr das gesehen?
-            </div>
-
-            <div className="overflow-hidden rounded-[1.35rem] bg-white shadow-2xl">
-              <div className="relative h-[152px] overflow-hidden bg-[#191313]">
-                <img src={item.image} alt="" className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/62 via-black/10 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3">
-                  <div className="mb-2 flex items-center gap-1.5">
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-white">
-                      {item.category}
-                    </span>
-                    <span className="rounded-full bg-white/90 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-[#211919]">
-                      {item.readTime}
-                    </span>
-                  </div>
-                  <h3 className="line-clamp-2 break-words font-display text-[22px] font-black leading-[0.92] text-white drop-shadow">
-                    {shortTitle}
-                  </h3>
-                </div>
-              </div>
-              <div className="p-3">
-                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#847774]">
-                  Heilbronner Stimme
-                </p>
-                <p className="mt-1 line-clamp-2 text-[10px] font-semibold leading-snug text-[#4f4744]">
-                  {item.summary}
-                </p>
-              </div>
-            </div>
-
-            <div className="mx-auto mt-2 flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#211919] shadow-xl">
-              <Link className="h-3.5 w-3.5 text-primary" />
-              stimme-swipe.de
-            </div>
-          </div>
-
-          <p className="absolute bottom-[64px] left-4 right-4 text-[12px] font-semibold text-white/88">
-            Bildunterschrift hinzufügen...
-          </p>
-
-          <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1.5">
-            <button className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-white/16 px-2.5 py-2 text-[9px] font-bold text-white backdrop-blur">
-              <span className="h-4 w-4 rounded-full bg-white/25" />
-              Deine Story
-            </button>
-            <button className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-white/16 px-2.5 py-2 text-[9px] font-bold text-white backdrop-blur">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#35c759] text-[9px]">
-                ★
-              </span>
-              Freunde
-            </button>
-            <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#4057ff] text-lg font-black text-white">
-              →
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (mode === "link") {
     return (
