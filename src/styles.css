@@ -41,47 +41,47 @@
 :root {
   --radius: 1rem;
 
-  /* Heilbronner Stimme inspired - deep red brand */
-  --background: oklch(0.985 0.003 60);
-  --foreground: oklch(0.18 0.02 20);
+  /* Heilbronner Stimme inspired - official blue wordmark: #007dc5 */
+  --background: oklch(0.985 0.006 240);
+  --foreground: oklch(0.18 0.025 245);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 20);
+  --card-foreground: oklch(0.18 0.025 245);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 20);
+  --popover-foreground: oklch(0.18 0.025 245);
 
-  --primary: oklch(0.52 0.21 27); /* HSt red */
+  --primary: #007dc5;
   --primary-foreground: oklch(0.99 0 0);
 
-  --secondary: oklch(0.96 0.01 40);
-  --secondary-foreground: oklch(0.2 0.02 20);
-  --muted: oklch(0.95 0.008 40);
-  --muted-foreground: oklch(0.5 0.02 30);
-  --accent: oklch(0.93 0.04 40);
-  --accent-foreground: oklch(0.2 0.02 20);
+  --secondary: oklch(0.96 0.012 245);
+  --secondary-foreground: oklch(0.2 0.025 245);
+  --muted: oklch(0.95 0.01 245);
+  --muted-foreground: oklch(0.5 0.025 245);
+  --accent: oklch(0.93 0.045 245);
+  --accent-foreground: oklch(0.2 0.025 245);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.01 40);
-  --input: oklch(0.9 0.01 40);
-  --ring: oklch(0.52 0.21 27);
+  --border: oklch(0.9 0.012 245);
+  --input: oklch(0.9 0.012 245);
+  --ring: #007dc5;
 
   --like: oklch(0.7 0.18 145); /* green for swipe-right */
   --nope: oklch(0.62 0.21 27); /* red for swipe-left */
 }
 
 .dark {
-  --background: oklch(0.14 0.01 20);
+  --background: oklch(0.14 0.02 245);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.2 0.015 20);
+  --card: oklch(0.2 0.025 245);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.2 0.015 20);
+  --popover: oklch(0.2 0.025 245);
   --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.62 0.22 27);
+  --primary: #0096df;
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.25 0.02 20);
+  --secondary: oklch(0.25 0.025 245);
   --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.25 0.02 20);
-  --muted-foreground: oklch(0.7 0.02 20);
-  --accent: oklch(0.3 0.04 27);
+  --muted: oklch(0.25 0.025 245);
+  --muted-foreground: oklch(0.7 0.025 245);
+  --accent: oklch(0.3 0.05 245);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.65 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);

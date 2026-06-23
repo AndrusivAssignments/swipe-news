@@ -1,6 +1,6 @@
 import { motion, useMotionValue, useTransform, type PanInfo, animate } from "framer-motion";
 import { Clock } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { NewsItem } from "@/data/news";
 
 interface Props {
@@ -14,15 +14,17 @@ interface Props {
 
 export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: Props) {
   const x = useMotionValue(0);
-  const y = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-22, 0, 22]);
   const likeOpacity = useTransform(x, [20, 140], [0, 1]);
   const nopeOpacity = useTransform(x, [-140, -20], [1, 0]);
   const [exiting, setExiting] = useState(false);
+  const exitStartedRef = useRef(false);
+  const draggingRef = useRef(false);
 
   const flyOff = useCallback(
     (dir: "left" | "right") => {
-      if (exiting) return;
+      if (exitStartedRef.current) return;
+      exitStartedRef.current = true;
       setExiting(true);
       const targetX = dir === "right" ? 600 : -600;
       animate(x, targetX, {
@@ -32,7 +34,7 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: 
         onComplete: () => onSwipe(dir),
       });
     },
-    [exiting, onSwipe, x],
+    [onSwipe, x],
   );
 
   useEffect(() => {
@@ -43,13 +45,13 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: 
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const threshold = 110;
+    draggingRef.current = false;
     if (info.offset.x > threshold || info.velocity.x > 600) {
       flyOff("right");
     } else if (info.offset.x < -threshold || info.velocity.x < -600) {
       flyOff("left");
     } else {
       animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
-      animate(y, 0, { type: "spring", stiffness: 400, damping: 30 });
     }
   };
 
@@ -58,13 +60,16 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: 
       className="absolute inset-0 select-none"
       style={{
         x: isTop ? x : 0,
-        y: isTop ? y : 0,
         rotate: isTop ? rotate : 0,
         zIndex: 10 - index,
       }}
-      drag={isTop && !exiting ? true : false}
+      drag={isTop && !exiting ? "x" : false}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.6}
+      dragMomentum={false}
+      onDragStart={() => {
+        draggingRef.current = true;
+      }}
       onDragEnd={handleDragEnd}
       initial={false}
       animate={{
@@ -74,7 +79,7 @@ export function SwipeCard({ item, isTop, index, onSwipe, onTap, triggerSwipe }: 
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       whileTap={{ cursor: "grabbing" }}
       onClick={() => {
-        if (isTop && !exiting && Math.abs(x.get()) < 5 && Math.abs(y.get()) < 5) {
+        if (isTop && !exiting && !draggingRef.current && Math.abs(x.get()) < 5) {
           onTap();
         }
       }}

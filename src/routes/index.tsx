@@ -120,12 +120,8 @@ function Index() {
       return [...unseen].sort((a, b) => b.id.localeCompare(a.id));
     }
 
-    return [...unseen].sort((a, b) => {
-      const aLiked = liked.some((item) => item.category === a.category) ? 1 : 0;
-      const bLiked = liked.some((item) => item.category === b.category) ? 1 : 0;
-      return bLiked - aLiked;
-    });
-  }, [activeCat, liked, seenIds]);
+    return unseen;
+  }, [activeCat, seenIds]);
 
   const categorySignals = useMemo(() => {
     const counts = new Map<Category, { likes: number; skips: number }>();
@@ -409,7 +405,7 @@ function SwipeView({
                 aria-label={`${mode.label}: ${mode.helper}`}
                 className={`flex min-h-11 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-black transition active:scale-[0.98] ${
                   active
-                    ? "bg-primary text-primary-foreground shadow-[0_10px_22px_-12px_rgba(174,31,38,0.75)]"
+                    ? "bg-primary text-primary-foreground shadow-[0_10px_22px_-12px_rgba(0,125,197,0.75)]"
                     : "bg-card text-foreground shadow-sm ring-1 ring-border"
                 }`}
               >
@@ -463,34 +459,32 @@ function SwipeView({
       </div>
 
       {index < deck.length && deck.length > 0 && (
-        <div className="z-10 flex shrink-0 items-center justify-center gap-6 px-5 pb-4 pt-2">
-          <ActionButton
-            onClick={() => !trigger && setTrigger("left")}
-            color="nope"
-            label="Weniger davon"
-          >
-            <X className="h-7 w-7" strokeWidth={3} />
-          </ActionButton>
-          <ActionButton
-            onClick={() => setOpenArticle(deck[index])}
-            color="brand"
-            small
-            label="Lesen"
-          >
-            <Search className="h-5 w-5" strokeWidth={2.5} />
-          </ActionButton>
-          <ActionButton
-            onClick={() => !trigger && setTrigger("right")}
-            color="like"
-            label="Mehr davon"
-          >
-            <Heart className="h-7 w-7" strokeWidth={3} />
-          </ActionButton>
+        <div className="z-10 shrink-0 px-5 pb-3 pt-2">
+          <div className="mx-auto flex max-w-[310px] items-center justify-between rounded-[1.6rem] bg-card/92 px-3 py-2 shadow-[0_16px_34px_-22px_rgba(0,40,70,0.55)] ring-1 ring-border/80 backdrop-blur">
+            <ActionButton
+              onClick={() => !trigger && setTrigger("left")}
+              color="nope"
+              label="Weniger"
+            >
+              <X className="h-5 w-5" strokeWidth={2.7} />
+            </ActionButton>
+            <ActionButton
+              onClick={() => setOpenArticle(deck[index])}
+              color="brand"
+              featured
+              label="Lesen"
+            >
+              <Search className="h-4 w-4" strokeWidth={2.5} />
+            </ActionButton>
+            <ActionButton onClick={() => !trigger && setTrigger("right")} color="like" label="Mehr">
+              <Heart className="h-5 w-5" strokeWidth={2.7} />
+            </ActionButton>
+          </div>
         </div>
       )}
 
-      <p className="z-10 shrink-0 px-5 pb-3 text-center text-[11px] text-muted-foreground">
-        Rechts: mehr davon. Links: weniger davon. Tippen: lesen.
+      <p className="z-10 shrink-0 px-5 pb-3 text-center text-[10px] font-medium text-muted-foreground">
+        Swipe rechts für mehr davon, links für weniger. Tippen öffnet den Artikel.
       </p>
     </motion.section>
   );
@@ -523,7 +517,7 @@ function TodayView({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -14 }}
-      className="h-full overflow-y-auto scroll-smooth px-5 pt-4 [scroll-snap-type:y_mandatory]"
+      className="h-full overflow-y-auto scroll-smooth px-5 pt-0 [scroll-snap-type:y_mandatory]"
     >
       <div className="flex flex-col gap-4 pb-6">
         <TodayFilterBar selectedCategory={selectedCategory} onCategoryChange={onCategoryChange} />
@@ -563,7 +557,7 @@ function TodayFilterBar({
   onCategoryChange: (category: Category | "Für dich") => void;
 }) {
   return (
-    <div className="sticky top-0 z-20 -mx-5 bg-background/95 px-5 pb-2 pt-1 backdrop-blur [scroll-snap-align:start]">
+    <div className="sticky top-0 z-20 -mx-5 border-b border-primary/10 bg-[#eef7fd] px-5 py-3 shadow-[0_10px_24px_-24px_rgba(0,60,100,0.45)] [scroll-snap-align:start]">
       <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TODAY_FILTERS.map((category) => {
           const active = category.value === selectedCategory;
@@ -1025,25 +1019,25 @@ function Splash({ show }: { show: boolean }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 1.03 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
-          className="absolute inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden bg-[#FBF7F2] text-[#16181F]"
+          className="absolute inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden bg-[#F5FAFE] text-[#111827]"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, ease: "easeOut" }}
-            className="pointer-events-none absolute -top-24 -right-20 h-80 w-80 rounded-full bg-[#FFD9C2] blur-3xl"
+            className="pointer-events-none absolute -top-24 -right-20 h-80 w-80 rounded-full bg-[#C8E9FF] blur-3xl"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 0.85, scale: 1 }}
             transition={{ duration: 1.1, ease: "easeOut", delay: 0.05 }}
-            className="pointer-events-none absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-[#D9E6FF] blur-3xl"
+            className="pointer-events-none absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-[#D4E8FF] blur-3xl"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 0.6, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
-            className="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#FFE9D6] blur-3xl"
+            className="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#E5F4FF] blur-3xl"
           />
 
           <motion.div
@@ -1061,7 +1055,7 @@ function Splash({ show }: { show: boolean }) {
               <Sparkles className="h-6 w-6 text-primary" />
             </motion.div>
 
-            <span className="text-[10px] font-semibold uppercase tracking-[0.45em] text-[#16181F]/55">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.45em] text-[#111827]/55">
               Heilbronner
             </span>
             <motion.h1
@@ -1079,7 +1073,7 @@ function Splash({ show }: { show: boolean }) {
               className="mt-3 flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              <span className="text-[11px] font-bold tracking-[0.3em] text-[#16181F]/80">
+              <span className="text-[11px] font-bold tracking-[0.3em] text-[#111827]/80">
                 SWIPE
               </span>
             </motion.div>
@@ -1219,28 +1213,42 @@ function ActionButton({
   onClick,
   color,
   label,
-  small,
+  featured,
 }: {
   children: ReactNode;
   onClick: () => void;
   color: "nope" | "like" | "brand";
   label: string;
-  small?: boolean;
+  featured?: boolean;
 }) {
-  const colorClass =
+  const toneClass =
     color === "nope"
-      ? "text-[var(--color-nope)] border-[var(--color-nope)]/30"
+      ? "text-[var(--color-nope)] bg-[color-mix(in_oklab,var(--color-nope)_10%,white)] ring-[var(--color-nope)]/18"
       : color === "like"
-        ? "text-[var(--color-like)] border-[var(--color-like)]/30"
-        : "text-primary border-primary/30";
-  const size = small ? "h-12 w-12" : "h-16 w-16";
+        ? "text-[var(--color-like)] bg-[color-mix(in_oklab,var(--color-like)_10%,white)] ring-[var(--color-like)]/18"
+        : "bg-primary text-primary-foreground ring-primary/20";
+
+  if (featured) {
+    return (
+      <button
+        onClick={onClick}
+        aria-label={label}
+        className={`flex h-11 min-w-[112px] items-center justify-center gap-2 rounded-full px-4 text-sm font-black shadow-[0_12px_24px_-16px_rgba(0,70,110,0.75)] ring-1 transition active:scale-[0.96] ${toneClass}`}
+      >
+        {children}
+        <span>{label}</span>
+      </button>
+    );
+  }
+
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className={`${size} grid place-items-center rounded-full border-2 bg-card shadow-[0_8px_20px_-8px_rgba(0,0,0,0.25)] transition active:scale-90 ${colorClass}`}
+      className={`flex h-11 min-w-[78px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[10px] font-black shadow-[0_10px_22px_-18px_rgba(0,0,0,0.45)] ring-1 transition active:scale-[0.94] ${toneClass}`}
     >
       {children}
+      <span className="leading-none">{label}</span>
     </button>
   );
 }
